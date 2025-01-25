@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Article URL Sender</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: 'Inter', sans-serif;
+          min-height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+          padding: 20px;
+        }
+
+        .container {
+          background: white;
+          padding: 2.5rem;
+          border-radius: 16px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+          width: 100%;
+          max-width: 800px;
+        }
+
+        .title {
+          color: #1a1a1a;
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-bottom: 1.5rem;
+          text-align: center;
+        }
+
+        .input-group {
+          margin-bottom: 1.5rem;
+        }
+
+        input[type="text"] {
+          width: 100%;
+          padding: 0.75rem 1rem;
+          font-size: 1rem;
+          border: 2px solid #e1e1e1;
+          border-radius: 8px;
+          transition: all 0.3s ease;
+          font-family: inherit;
+        }
+
+        input[type="text"]:focus {
+          outline: none;
+          border-color: #4f46e5;
+          box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        input[type="text"]::placeholder {
+          color: #9ca3af;
+        }
+
+        button {
+          width: 100%;
+          padding: 0.75rem 1.5rem;
+          font-size: 1rem;
+          font-weight: 500;
+          color: white;
+          background: #4f46e5;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-family: inherit;
+        }
+
+        button:hover {
+          background: #4338ca;
+          transform: translateY(-1px);
+        }
+
+        button:active {
+          transform: translateY(0);
+        }
+
+        button:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        #responseSection {
+          margin-top: 1.5rem;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          line-height: 1.5;
+          overflow-x: auto;
+        }
+
+        .response-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 1rem;
+          background: white;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
+        .response-table th,
+        .response-table td {
+          padding: 12px 16px;
+          text-align: left;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .response-table th {
+          background-color: #f8fafc;
+          font-weight: 600;
+          color: #1f2937;
+          text-transform: uppercase;
+          font-size: 0.75rem;
+          letter-spacing: 0.05em;
+        }
+
+        .response-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .response-table tbody tr:hover {
+          background-color: #f9fafb;
+        }
+
+        .response-table td {
+          color: #4b5563;
+        }
+
+        .error {
+          color: #dc2626;
+          background: #fee2e2;
+          border: 1px solid #fecaca;
+          padding: 1rem;
+          border-radius: 8px;
+        }
+
+        .success {
+          color: #059669;
+          background: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          padding: 1rem;
+          border-radius: 8px;
+        }
+
+        /* Loading Animation */
+        .loading-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+        }
+
+        .loading-spinner {
+          width: 50px;
+          height: 50px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #4f46e5;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 1rem;
+        }
+
+        .loading-text {
+          color: #4f46e5;
+          font-size: 0.875rem;
+          font-weight: 500;
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 640px) {
+          .container {
+            padding: 1.5rem;
+          }
+
+          .response-table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+          }
+
+          .response-table th,
+          .response-table td {
+            padding: 8px 12px;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1 class="title">Article URL Sender</h1>
+        <div class="input-group">
+          <input type="text" id="urlInput" placeholder="Enter article URL" autocomplete="off">
+        </div>
+        <button id="submitButton">Send Request</button>
+        <div id="responseSection"></div>
+      </div>
+
+      <script>
+        const WEBHOOK_URL = 'https://n8n.lolinux2002.com/webhook/70dfa457-408c-445a-a173-8045a6e08795';
+
+        function showLoading() {
+          return `
+            <div class="loading-container">
+              <div class="loading-spinner"></div>
+              <div class="loading-text">Processing your request...</div>
+            </div>
+          `;
+        }
+
+        function cleanText(text) {
+          return text
+            .replace(/\\n/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        }
+
+        function createTableFromHTML(htmlString) {
+          const div = document.createElement('div');
+          div.innerHTML = htmlString.trim();
+          
+          const originalTable = div.querySelector('table');
+          if (!originalTable) return htmlString;
+
+          const newTable = document.createElement('table');
+          newTable.className = 'response-table';
+          
+          const thead = document.createElement('thead');
+          const tbody = document.createElement('tbody');
+          
+          Array.from(originalTable.rows).forEach((row, index) => {
+            const newRow = row.cloneNode(true);
+            Array.from(newRow.cells).forEach(cell => {
+              cell.textContent = cleanText(cell.textContent);
+            });
+
+            if (index === 0) {
+              thead.appendChild(newRow);
+            } else {
+              tbody.appendChild(newRow);
+            }
+          });
+
+          newTable.appendChild(thead);
+          newTable.appendChild(tbody);
+          return newTable.outerHTML;
+        }
+
+        document.getElementById('submitButton').addEventListener('click', function() {
+          const articleUrl = document.getElementById('urlInput').value.trim();
+          const responseSection = document.getElementById('responseSection');
+          responseSection.className = '';
+
+          if (!articleUrl.startsWith('http://') && !articleUrl.startsWith('https://')) {
+            responseSection.innerHTML = '<p>Error: Invalid URL format</p>';
+            responseSection.className = 'error';
+            return;
+          }
+
+          this.disabled = true;
+          responseSection.innerHTML = showLoading();
+
+          const fullUrl = `${WEBHOOK_URL}?text=${encodeURIComponent(articleUrl)}`;
+          console.log('Sending POST request to:', fullUrl);
+
+          fetch(fullUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.text();
+          })
+          .then(data => {
+            const styledTable = createTableFromHTML(data);
+            responseSection.innerHTML = styledTable;
+            responseSection.className = 'success';
+          })
+          .catch(error => {
+            console.error('Fetch error:', error);
+            responseSection.innerHTML = '<p>Error: ' + error.message + '</p>';
+            responseSection.className = 'error';
+          })
+          .finally(() => {
+            this.disabled = false;
+          });
+        });
+      </script>
+    </body>
+    </html>
